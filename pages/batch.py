@@ -7,6 +7,11 @@ import numpy as np
 from Utils.Utils import request_for_model_score
 from Utils.components import get_model_options_selectbox
 
+# 用于在用户下载后更新当前文件
+def update_key():
+    st.session_state.uploader_key += 1
+
+
 def validate_file(df):
     required_columns = ['ID', 'text']
     if not all(column in df.columns for column in required_columns):
@@ -36,6 +41,9 @@ def process_file(df, model_name):
     return df
 
 def main():
+    if "uploader_key" not in st.session_state:
+        st.session_state.uploader_key = 0
+        
     st.write("### 文件批处理")
     st.markdown(
     '''
@@ -91,7 +99,8 @@ def main():
             label="下载评分结果",
             data=output,
             file_name="processed_results.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            on_click = update_key
         )
 
 if __name__ == "__main__":
