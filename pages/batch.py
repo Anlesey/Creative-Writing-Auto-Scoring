@@ -17,6 +17,9 @@ def validate_file(df):
     return None
 
 def process_file(df, model_name):
+    df['新颖性'] = np.nan
+    df['有效性'] = np.nan
+    df['Error'] = np.nan
     progress_bar = st.progress(0)
 
     for i, row in df.iterrows():
@@ -67,10 +70,10 @@ def main():
             st.error(validation_error)
             return
 
-        st.info("文件格式正确，开始处理数据...")
+        st.info("自动评分中...")
         processed_df = process_file(df, model_name)
 
-        st.success("数据处理完成！")
+        st.success("评分完成！")
         
         # 将 DataFrame 保存为 Excel 格式
         output = io.BytesIO()
@@ -83,11 +86,13 @@ def main():
 
         # 创建下载按钮
         download_link = st.download_button(
-            label="下载结果",
+            label="下载评分结果",
             data=output,
             file_name="processed_results.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        if download_link:
+            uploaded_file = None
 
 if __name__ == "__main__":
     main()
