@@ -85,6 +85,7 @@ def main():
         # 将指针移回开始位置
         output.seek(0)
 
+        uploaded_file = None
         # 创建下载按钮
         download_link = st.download_button(
             label="下载评分结果",
@@ -92,7 +93,6 @@ def main():
             file_name="processed_results.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        uploaded_file = None
 
 if __name__ == "__main__":
     main()
