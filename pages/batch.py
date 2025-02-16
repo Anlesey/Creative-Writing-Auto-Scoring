@@ -8,6 +8,8 @@ from Utils.Utils import request_for_model_score
 from Utils.components import get_model_options_selectbox
 
 # 用于在用户下载后更新当前文件
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
 def update_key():
     st.session_state.uploader_key += 1
 
@@ -41,11 +43,7 @@ def process_file(df, model_name):
     return df
 
 def main():
-    if "uploader_key" not in st.session_state:
-        st.session_state.uploader_key = 0
-
     st.write("### 文件批处理")
-
     model_name = get_model_options_selectbox(key='batch')
     
     uploaded_file = st.file_uploader(
@@ -71,11 +69,9 @@ def main():
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             processed_df.to_excel(writer, index=False, sheet_name='Sheet1')
-            # writer.save()  # 不再需要
 
         # 将指针移回开始位置
         output.seek(0)
-
         uploaded_file = None
         # 创建下载按钮
         download_link = st.download_button(
@@ -89,8 +85,9 @@ def main():
     st.divider()
     st.markdown(
     '''
+    ### 说明
     数据格式要求：
-    包含ID、text两列的**.xlsx或.csv**数据文件
+    - 文件格式：.xlsx或.csv。必须包含ID、text两列。
     - **ID**：唯一标识符，不能重复。必须仅由字母、数字、下划线组成。
     - **text**：待评分的文本。
 
