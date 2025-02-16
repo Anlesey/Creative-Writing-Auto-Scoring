@@ -26,7 +26,7 @@ def process_file(df, model_name):
     for i, row in df.iterrows():
         text = f"{row['text']}"
         scores, err = request_for_model_score(model_name, text)
-        if err is not None:
+        if err is None:
             df.at[i, '新颖性'] = scores[0]
             df.at[i, '有效性'] = scores[1]
         else:
@@ -92,8 +92,7 @@ def main():
             file_name="processed_results.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        if download_link:
-            uploaded_file = None
+        uploaded_file = None
 
 if __name__ == "__main__":
     main()
