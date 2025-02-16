@@ -20,7 +20,7 @@ def process_file(df, model_name):
     progress_bar = st.progress(0)
 
     for i, row in df.iterrows():
-        text = f"{row['物品']} {row['答案']}"
+        text = f"{row['text']}"
         scores, err = request_for_model_score(model_name, text)
         if err is not None:
             df.at[i, '新颖性'] = scores[0]
@@ -40,12 +40,17 @@ def main():
     - **ID**：唯一标识符，不能重复。必须仅由字母、数字、下划线组成。
     - **text**：待评分的文本。
 
-    示例：
+    输入示例：
     | ID  | text  |
     |-----|-------|
     | 1   | 从前有座山，山里有座庙 |
     | 2   | 庙里有个老和尚和一个小和尚 |
 
+    输出示例：
+    | ID  | text  | 新颖性  | 有效性  |
+    |-----|-------| -------  | -------  |
+    | 1   | 从前有座山，山里有座庙 | 1.0  | 1.0  |
+    | 2   | 庙里有个老和尚和一个小和尚 | 1.0  | 1.0  |
     ''')
 
     st.divider()

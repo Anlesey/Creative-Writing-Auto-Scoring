@@ -34,5 +34,6 @@ if st.button("计算创造力得分"):
     if err is not None:
         st.error(err)
     else:
-        st.write(f'新颖性评分：{score[0]}\n有效性评分：{score[1]}')
+        st.write(f'新颖性评分：', {score[0]})
+        st.write(f'有效性评分：', {score[1]})
     
