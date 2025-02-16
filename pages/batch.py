@@ -39,7 +39,7 @@ def process_file(df, model_name):
         else:
             df.at[i, 'Error'] = err
         progress_bar.progress((i + 1) / len(df))
-    df['Error'].isna().sum() == df.shape[0]:
+    if df['Error'].isna().sum() == df.shape[0]:
         del df['Error']
     return df
 
