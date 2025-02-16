@@ -43,33 +43,16 @@ def process_file(df, model_name):
 def main():
     if "uploader_key" not in st.session_state:
         st.session_state.uploader_key = 0
-        
+
     st.write("### 文件批处理")
-    st.markdown(
-    '''
-    数据格式要求：
-    包含ID、text两列的**.xlsx或.csv**数据文件
-    - **ID**：唯一标识符，不能重复。必须仅由字母、数字、下划线组成。
-    - **text**：待评分的文本。
-
-    输入示例：
-    | ID  | text  |
-    |-----|-------|
-    | 1   | 从前有座山，山里有座庙 |
-    | 2   | 庙里有个老和尚和一个小和尚 |
-
-    输出示例：
-    | ID  | text  | 新颖性  | 有效性  |
-    |-----|-------| -------  | -------  |
-    | 1   | 从前有座山，山里有座庙 | 1.0  | 1.0  |
-    | 2   | 庙里有个老和尚和一个小和尚 | 1.0  | 1.0  |
-    ''')
-
-    st.divider()
 
     model_name = get_model_options_selectbox(key='batch')
     
-    uploaded_file = st.file_uploader(label="请上传包含ID、text两列的excel或csv数据文件", type=["csv", "xlsx"])
+    uploaded_file = st.file_uploader(
+        label="请上传包含ID、text两列的excel或csv数据文件", 
+        type=["csv", "xlsx"],
+        key=f'uploader_{st.session_state.uploader_key}'
+    )
 
     if uploaded_file:
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
@@ -102,6 +85,27 @@ def main():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             on_click = update_key
         )
+    
+    st.divider()
+    st.markdown(
+    '''
+    数据格式要求：
+    包含ID、text两列的**.xlsx或.csv**数据文件
+    - **ID**：唯一标识符，不能重复。必须仅由字母、数字、下划线组成。
+    - **text**：待评分的文本。
+
+    输入示例：
+    | ID  | text  |
+    |-----|-------|
+    | 1   | 从前有座山，山里有座庙 |
+    | 2   | 庙里有个老和尚和一个小和尚 |
+
+    输出示例：
+    | ID  | text  | 新颖性  | 有效性  |
+    |-----|-------| -------  | -------  |
+    | 1   | 从前有座山，山里有座庙 | 1.0  | 1.0  |
+    | 2   | 庙里有个老和尚和一个小和尚 | 1.0  | 1.0  |
+    ''')
 
 if __name__ == "__main__":
     main()
