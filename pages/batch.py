@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 import io
+import numpy as np
 
 from Utils.Utils import request_for_model_score
 from Utils.components import get_model_options_selectbox
