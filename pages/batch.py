@@ -39,7 +39,8 @@ def process_file(df, model_name):
         else:
             df.at[i, 'Error'] = err
         progress_bar.progress((i + 1) / len(df))
-
+    df['Error'].isna().sum() == df.shape[0]:
+        del df['Error']
     return df
 
 def main():
@@ -98,7 +99,7 @@ def main():
     | 2   | 庙里有个老和尚和一个小和尚 |
 
     输出示例：
-    | ID  | text  | 新颖性  | 有效性  |
+    | ID  | text  |新颖性  | 有效性  |
     |-----|-------| -------  | -------  |
     | 1   | 从前有座山，山里有座庙 | 1.0  | 1.0  |
     | 2   | 庙里有个老和尚和一个小和尚 | 1.0  | 1.0  |
