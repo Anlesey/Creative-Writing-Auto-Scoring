@@ -8,7 +8,7 @@ def get_model_options_selectbox(key=None):
     # 模型
     return st.selectbox(
         label="Model",
-        options=("gpt-4o-mini", 
+        options=("gpt-4o-mini", "gpt-4o"
         # "Anlesey/ernie-3.0-mini-zh-finetuned-aut", 
         ),
         key=key
