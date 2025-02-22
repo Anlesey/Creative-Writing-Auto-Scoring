@@ -46,7 +46,7 @@ def get_finturned_model_response_openai(client, text, model_name, max_retries=5)
     return None, response
 
 def request_for_model_score(model_name, text):
-    if model_name=="gpt-4o-mini":
+    if model_name in ["gpt-4o", "gpt-4o-mini"]:
         OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"]
         client = OpenAI(api_key=OPENAI_API_KEY)
         scores, err = get_finturned_model_response_openai(client, text, model_name)
