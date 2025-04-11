@@ -133,12 +133,10 @@ def main():
             return
         
         # 添加开始评分按钮
-        if st.button("开始评分", use_container_width=True, disabled=not sys_prompt or not samples_file or not test_file or st.session_state.get('is_processing', False), key='custom_batch_process'):
-            st.session_state.is_processing = True
+        if st.button("开始评分", use_container_width=True, disabled=not sys_prompt or not samples_file or not test_file, key='custom_batch_process'):
             st.info("自动评分中...")
             processed_df, correlation_results, has_original_scores = process_file(df, model_name, sys_prompt, samples_df)
             st.success("评分完成！")
-            st.session_state.is_processing = false
             # 显示相关性结果，但不使用可视化
             if has_original_scores:
                 st.write("### 相关性分析结果")
