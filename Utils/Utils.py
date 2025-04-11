@@ -21,13 +21,13 @@ def get_fewshot_sample_messages(d_fewshot=d_fewshot):
     return messages
 
 # 输出:分数;错误信息
-def get_finturned_model_response_openai(client, text, model_name, max_retries=5):
+def get_finturned_model_response_openai(client, text, model_name, sys_prompt=starting_system_prompt, max_retries=5):
     retries = 0
     while retries < max_retries:
         # send a ChatCompletion request to count to 100
         response = client.chat.completions.create(
             model=model_name,
-            messages=[{"role": "system", "content": starting_system_prompt}] 
+            messages=[{"role": "system", "content": sys_prompt}] 
                 + get_fewshot_sample_messages() 
                 + [{"role": "user", "content": text}],
             temperature=0,

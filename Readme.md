@@ -1,19 +1,77 @@
-### Ocsai-ch-AUT
-Ocsai-ch-AUT（基于人工智能的开放创造力评分，用于中文的AUT任务）是一个针对发散性思维自动评分任务的经过微调的大型语言模型集。相比基于语义距离计算创造力的评分方案，该模型集显著提升了评分准确性。
+# 创意写作自动评分系统
 
-Ocsai-ch-AUT (Open Creativity Scoring with Artificial Intelligence for AUT task in Chinese) is the fine-tuned set of large language models from Automated Scoring of Divergent Thinking Greatly Improves with Large Language Models. Compared to creativity scoring methods based on semantic distance calculation, this model set significantly improves scoring accuracy.
+## 项目简介
 
-### Update
-(08/11): Initial commitment.
+创意写作自动评分系统是一个基于大型语言模型的工具，用于自动评估创意写作任务中的原创性和有效性。该系统特别适用于博物馆老年游览者体验问题解决方案的评估，能够快速、客观地为大量创意写作作品打分。
 
-### Models
-ft:gpt-3.5-turbo-1106:personal:v2-0-1:9RL6qByn
+## 功能特点
 
-Anlesey/ernie-3.0-mini-zh-finetuned-aut
+- **单例测试**：对单个创意写作文本进行评分
+- **批量处理**：支持批量上传文件进行评分
+- **自定义测试**：允许用户自定义系统提示词和few-shot样本
+- **相关性分析**：对比模型评分与人工评分的相关性
+- **可视化展示**：通过散点图直观展示评分结果
 
-### Notes
-模型 ft:gpt-3.5-turbo-1106:personal:v2-0-1:9RL6qByn 用 Openai 提供的 fine-tune API 训练。
+## 支持的模型
 
-模型 Anlesey/ernie-3.0-mini-zh-finetuned-aut 部署在 Huggingface 提供的 Inference Endpoints。
+- **gpt-4o-mini**：OpenAI提供的轻量级GPT-4模型
+- **gpt-4o**：OpenAI提供的GPT-4模型
 
-**为了省钱，Anlesey/ernie-3.0-mini-zh-finetuned-aut 模型暂时不可用。**
+## 使用方法
+
+### 单例测试
+
+1. 打开主页面
+2. 选择评分模型
+3. 输入待评分文本
+4. 点击"计算创造力得分"按钮
+5. 查看原创性和有效性评分结果
+
+### 批量处理
+
+1. 进入"批量处理"页面
+2. 选择评分模型
+3. 上传包含ID和text列的Excel或CSV文件
+4. 等待系统完成评分
+5. 下载评分结果文件
+
+### 自定义测试
+
+1. 进入"自定义测试"页面
+2. 选择评分模型
+3. 自定义系统提示词
+4. 上传包含few-shot样本的Excel文件
+5. 上传待评分的文本文件
+6. 查看评分结果和相关性分析
+
+## 文件格式要求
+
+### Few-shot样本文件
+- 文件格式：.xlsx
+- 必须包含以下列：
+  - **text**：示例文本
+  - **originality**：原创性得分
+  - **usefulness**：有效性得分
+
+### 测试文件
+- 文件格式：.xlsx或.csv
+- 必须包含以下列：
+  - **text**：待评分的文本
+- 如果包含以下列，将计算相关性：
+  - **originality**：原始原创性得分
+  - **usefulness**：原始有效性得分
+
+## 技术实现
+
+本系统基于Streamlit构建Web界面，使用OpenAI API进行文本评分。系统采用few-shot学习方法，通过提供示例数据帮助模型理解评分标准，从而提高评分准确性。
+
+## 更新日志
+
+- **2024-08-11**：初始版本发布
+- **2024-08-XX**：添加自定义测试功能和相关性分析
+
+## 注意事项
+
+- 使用系统需要有效的OpenAI API密钥
+- 评分结果仅供参考，最终评判应结合人工审核
+- 大量请求可能会产生API费用，请合理使用
