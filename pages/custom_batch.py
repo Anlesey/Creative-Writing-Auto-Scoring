@@ -89,7 +89,7 @@ def main():
     sys_prompt = st.text_area(
         "System Prompt",
         value='''请你作为创造力研究领域的专业研究者，为创意写作任务中被试的作答评分。
-任务背景：被试被要求为博物馆中的老年游览者发现一项亟待解决的体验问题，并现有技术为老年游览者设计一个能够最好解决该问题的、最新颖的观展方案。例如，可以设计博物馆的藏品展示、游览方式，或使用互联网技术通过智能终端解决问题。
+任务背景：被试被要求为博物馆中的老年游览者发现一项急需解决的体验问题，并现有技术为老年游览者设计一个能够最好解决该问题的、最新颖的观展方案。例如，可以设计博物馆的藏品展示、游览方式，或使用互联网技术通过智能终端解决问题。
 要求：对于被试的回答，你需要评价的分数有两项：原创性、有效性。分值为0~10：1分代表该作答不具备原创性/有效性，10分代表该作答极具原创性/有效性。
 输出规范：直接给出原创性、有效性两个评分结果，以英文逗号分隔。评分需保留一位小数。请直接给出分数结果，不需要任何其他额外说明。''',
         height=200
@@ -99,8 +99,8 @@ def main():
     col1, col2 = st.columns(2)
     
     with col1:
-        # 上传Few-shot样本文件
-        st.write("#### 请上传传Few-shot样本文件")
+        # 上传Few-shot样本文件（可选）
+        st.write("#### 上传Few-shot样本文件（可选）")
         samples_file = st.file_uploader(
             "上传包含text、originality、usefulness列的样本文件",
             type=["xlsx", "csv"],
@@ -116,14 +116,16 @@ def main():
             key=f'test_uploader_{st.session_state.uploader_key}'
         )
     
-    # 只有当两个文件都上传后，才进行处理
-    if samples_file and test_file:
-        # 读取样本文件
-        samples_df = pd.read_excel(samples_file)
-        validation_error = validate_samples_file(samples_df)
-        if validation_error:
-            st.error(validation_error)
-            return
+    # 只要上传了测试文件就可以进行处理
+    if test_file:
+        # 读取样本文件（如果有）
+        samples_df = None
+        if samples_file:
+            samples_df = pd.read_excel(samples_file) if samples_file.name.endswith('.xlsx') else pd.read_csv(samples_file)
+            validation_error = validate_samples_file(samples_df)
+            if validation_error:
+                st.error(validation_error)
+                return
         
         # 读取测试文件
         df = pd.read_csv(test_file) if test_file.name.endswith('.csv') else pd.read_excel(test_file)
@@ -133,7 +135,7 @@ def main():
             return
         
         # 添加开始评分按钮
-        if st.button("开始评分", use_container_width=True, disabled=not sys_prompt or not samples_file or not test_file, key='custom_batch_process'):
+        if st.button("开始评分", use_container_width=True, disabled=not sys_prompt or not test_file, key='custom_batch_process'):
             st.info("自动评分中...")
             processed_df, correlation_results, has_original_scores = process_file(df, model_name, sys_prompt, samples_df)
             st.success("评分完成！")

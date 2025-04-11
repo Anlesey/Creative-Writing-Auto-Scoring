@@ -13,6 +13,8 @@ d_fewshot = pd.read_excel('data/samples.xlsx')
 
 def get_fewshot_sample_messages(samples_df=d_fewshot):
     messages = []
+    if samples_df is None or len(samples_df) == 0:
+        return messages
     for i,r in samples_df.iterrows():
         messages = messages + [
             {"role": "user", "content": r['text']},
