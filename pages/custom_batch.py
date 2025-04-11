@@ -12,7 +12,8 @@ if "uploader_key" not in st.session_state:
 def update_key():
     st.session_state.uploader_key += 1
 
-def validate_file(df):
+# 修改函数名以匹配调用
+def validate_samples_file(df):
     required_columns = ['text', 'originality', 'usefulness']
     if not all(column in df.columns for column in required_columns):
         return "样本文件必须包含以下列：text, originality, usefulness"
@@ -94,96 +95,90 @@ def main():
         height=200
     )
     
-    # 上传Few-shot样本文件
-    st.write("#### 上传Few-shot样本文件")
-    samples_file = st.file_uploader(
-        "上传包含text、originality、usefulness列的样本文件",
-        type=["xlsx"],
-        key=f'samples_uploader_{st.session_state.uploader_key}'
-    )
-
-    if samples_file:
+    # 创建两列布局，同时显示两个文件上传框
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # 上传Few-shot样本文件
+        st.write("#### 上传Few-shot样本文件")
+        samples_file = st.file_uploader(
+            "上传包含text、originality、usefulness列的样本文件",
+            type=["xlsx"],
+            key=f'samples_uploader_{st.session_state.uploader_key}'
+        )
+    
+    with col2:
+        # 上传待评分文件
+        st.write("#### 上传待评分文件")
+        test_file = st.file_uploader(
+            "上传包含text列的测试文件",
+            type=["xlsx", "csv"],
+            key=f'test_uploader_{st.session_state.uploader_key}'
+        )
+    
+    # 只有当两个文件都上传后，才进行处理
+    if samples_file and test_file:
+        # 读取样本文件
         samples_df = pd.read_excel(samples_file)
         validation_error = validate_samples_file(samples_df)
         if validation_error:
             st.error(validation_error)
             return
-    
-    # 上传待评分文件 - 这部分现在是独立的
-    st.write("#### 上传待评分文件")
-    test_file = st.file_uploader(
-        "上传包含text列的测试文件 (如果包含originality和usefulness列，将计算相关性)",
-        type=["xlsx", "csv"],
-        key=f'test_uploader_{st.session_state.uploader_key}'
-    )
-
-    if test_file:
-        df = pd.read_csv(test_file) if test_file.name.endswith('.csv') else pd.read_excel(test_file)
         
+        # 读取测试文件
+        df = pd.read_csv(test_file) if test_file.name.endswith('.csv') else pd.read_excel(test_file)
         validation_error = validate_test_file(df)
         if validation_error:
             st.error(validation_error)
             return
-
-        st.info("自动评分中...")
-        processed_df, correlation_results, has_original_scores = process_file(df, model_name, sys_prompt, samples_df)
-        st.success("评分完成！")
         
-        # 显示相关性结果
-        if has_original_scores:
-            st.write("### 相关性分析结果")
+        # 添加开始评分按钮
+        if st.button("开始评分"):
+            st.info("自动评分中...")
+            processed_df, correlation_results, has_original_scores = process_file(df, model_name, sys_prompt, samples_df)
+            st.success("评分完成！")
             
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write("#### Pearson相关系数")
-                pearson_df = pd.DataFrame({
-                    '维度': ['原创性', '有效性'],
+            # 显示相关性结果，但不使用可视化
+            if has_original_scores:
+                st.write("### 相关性分析结果")
+                
+                # 创建相关性结果表格
+                correlation_table = pd.DataFrame({
+                    '维度': ['原创性 (Pearson)', '有效性 (Pearson)', '原创性 (Spearman)', '有效性 (Spearman)'],
                     '相关系数': [
                         correlation_results['pearson']['originality'][0],
-                        correlation_results['pearson']['usefulness'][0]
-                    ],
-                    'p值': [
-                        correlation_results['pearson']['originality'][1],
-                        correlation_results['pearson']['usefulness'][1]
-                    ]
-                })
-                st.dataframe(pearson_df.style.format({
-                    '相关系数': '{:.4f}',
-                    'p值': '{:.4f}'
-                }))
-            
-            with col2:
-                st.write("#### Spearman相关系数")
-                spearman_df = pd.DataFrame({
-                    '维度': ['原创性', '有效性'],
-                    '相关系数': [
+                        correlation_results['pearson']['usefulness'][0],
                         correlation_results['spearman']['originality'][0],
                         correlation_results['spearman']['usefulness'][0]
                     ],
                     'p值': [
+                        correlation_results['pearson']['originality'][1],
+                        correlation_results['pearson']['usefulness'][1],
                         correlation_results['spearman']['originality'][1],
                         correlation_results['spearman']['usefulness'][1]
                     ]
                 })
-                st.dataframe(spearman_df.style.format({
+                
+                st.dataframe(correlation_table.style.format({
                     '相关系数': '{:.4f}',
                     'p值': '{:.4f}'
                 }))
-        
-        # 下载结果
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            processed_df.to_excel(writer, index=False, sheet_name='Sheet1')
-        
-        output.seek(0)
-        st.download_button(
-            label="下载评分结果",
-            data=output,
-            file_name="custom_processed_results.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            on_click=update_key
-        )
+            
+            # 下载结果
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                processed_df.to_excel(writer, index=False, sheet_name='Sheet1')
+            
+            output.seek(0)
+            st.download_button(
+                label="下载评分结果",
+                data=output,
+                file_name="custom_processed_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                on_click=update_key
+            )
+    elif samples_file or test_file:
+        st.info("请上传两个文件后再开始评分")
 
     st.divider()
     st.markdown(
