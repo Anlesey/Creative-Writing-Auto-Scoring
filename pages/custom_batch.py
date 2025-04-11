@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 import numpy as np
+import time
 from Utils.Utils import get_finturned_model_response_openai
 from Utils.components import get_model_options_selectbox
 from openai import OpenAI
@@ -174,7 +175,7 @@ def main():
             st.download_button(
                 label="下载评分结果",
                 data=output,
-                file_name="custom_processed_results.xlsx",
+                file_name=f"{model_name}_{time.strftime('%Y%m%d_%H%M%S')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 on_click=update_key
             )
