@@ -100,7 +100,7 @@ def main():
     
     with col1:
         # 上传Few-shot样本文件（可选）
-        st.write("#### 上传Few-shot样本文件（可选）")
+        st.write("#### Few-shot样本文件(可选)")
         samples_file = st.file_uploader(
             "上传包含text、originality、usefulness列的样本文件",
             type=["xlsx", "csv"],
@@ -109,7 +109,7 @@ def main():
     
     with col2:
         # 上传待评分文件
-        st.write("#### 上传待评分文件")
+        st.write("#### 待评分文件")
         test_file = st.file_uploader(
             "上传包含text列的测试文件",
             type=["xlsx", "csv"],
