@@ -5,7 +5,7 @@ import numpy as np
 from Utils.Utils import get_finturned_model_response_openai
 from Utils.components import get_model_options_selectbox
 from openai import OpenAI
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import f, pearsonr, spearmanr
 
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
@@ -100,10 +100,10 @@ def main():
     
     with col1:
         # 上传Few-shot样本文件
-        st.write("#### 上传Few-shot样本文件")
+        st.write("#### 请上传传Few-shot样本文件")
         samples_file = st.file_uploader(
             "上传包含text、originality、usefulness列的样本文件",
-            type=["xlsx"],
+            type=["xlsx", "csv"],
             key=f'samples_uploader_{st.session_state.uploader_key}'
         )
     
@@ -133,11 +133,12 @@ def main():
             return
         
         # 添加开始评分按钮
-        if st.button("开始评分"):
+        if st.button("开始评分", use_container_width=True, disabled=not sys_prompt or not samples_file or not test_file or st.session_state.get('is_processing', False), key='custom_batch_process'):
+            st.session_state.is_processing = True
             st.info("自动评分中...")
             processed_df, correlation_results, has_original_scores = process_file(df, model_name, sys_prompt, samples_df)
             st.success("评分完成！")
-            
+            st.session_state.is_processing = false
             # 显示相关性结果，但不使用可视化
             if has_original_scores:
                 st.write("### 相关性分析结果")
@@ -177,28 +178,10 @@ def main():
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 on_click=update_key
             )
-    elif samples_file or test_file:
-        st.info("请上传两个文件后再开始评分")
+    # elif samples_file or test_file:
+    #     st.info("请上传两个文件后再开始评分")
 
     st.divider()
-    st.markdown(
-    '''
-    #### 说明
-    1. Few-shot样本文件格式要求：
-    - 文件格式：.xlsx
-    - 必须包含以下列：
-        - **text**：示例文本
-        - **originality**：原创性得分
-        - **usefulness**：有效性得分
-
-    2. 测试文件格式要求：
-    - 文件格式：.xlsx或.csv
-    - 必须包含以下列：
-        - **text**：待评分的文本
-    - 如果包含以下列，将计算相关性：
-        - **originality**：原始原创性得分
-        - **usefulness**：原始有效性得分
-    ''')
 
 if __name__ == "__main__":
     main()
