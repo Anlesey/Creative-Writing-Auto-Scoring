@@ -11,9 +11,9 @@ starting_system_prompt = '''请你作为创造力研究领域的专业研究者�
 
 d_fewshot = pd.read_excel('data/samples.xlsx')
 
-def get_fewshot_sample_messages(d_fewshot=d_fewshot):
+def get_fewshot_sample_messages(samples_df=d_fewshot):
     messages = []
-    for i,r in d_fewshot.iterrows():
+    for i,r in samples_df.iterrows():
         messages = messages + [
             {"role": "user", "content": r['text']},
             {"role": "assistant", "content": f"{r['originality']},{r['usefulness']}"},
@@ -21,14 +21,14 @@ def get_fewshot_sample_messages(d_fewshot=d_fewshot):
     return messages
 
 # 输出:分数;错误信息
-def get_finturned_model_response_openai(client, text, model_name, sys_prompt=starting_system_prompt, max_retries=5):
+def get_finturned_model_response_openai(client, text, model_name, sys_prompt=starting_system_prompt, samples_df=d_fewshot, max_retries=5):
     retries = 0
     while retries < max_retries:
         # send a ChatCompletion request to count to 100
         response = client.chat.completions.create(
             model=model_name,
             messages=[{"role": "system", "content": sys_prompt}] 
-                + get_fewshot_sample_messages() 
+                + get_fewshot_sample_messages(samples_df=d_fewshot) 
                 + [{"role": "user", "content": text}],
             temperature=0,
             max_tokens=10
