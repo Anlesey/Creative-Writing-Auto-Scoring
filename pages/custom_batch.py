@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
-import re
 import io
 import numpy as np
 from Utils.Utils import request_for_model_score, get_finturned_model_response_openai
 from Utils.components import get_model_options_selectbox
 from openai import OpenAI
-import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 
 if "uploader_key" not in st.session_state:
@@ -173,36 +170,6 @@ def main():
                     '相关系数': '{:.4f}',
                     'p值': '{:.4f}'
                 }))
-            
-            # 创建散点图
-            st.write("### 散点图分析")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write("#### 原创性评分对比")
-                fig, ax = plt.subplots(figsize=(6, 6))
-                ax.scatter(processed_df['originality'], processed_df['新颖性'])
-                ax.set_xlabel('原始原创性评分')
-                ax.set_ylabel('模型原创性评分')
-                ax.set_title('原创性评分对比')
-                # 添加对角线
-                min_val = min(processed_df['originality'].min(), processed_df['新颖性'].min())
-                max_val = max(processed_df['originality'].max(), processed_df['新颖性'].max())
-                ax.plot([min_val, max_val], [min_val, max_val], 'r--')
-                st.pyplot(fig)
-            
-            with col2:
-                st.write("#### 有效性评分对比")
-                fig, ax = plt.subplots(figsize=(6, 6))
-                ax.scatter(processed_df['usefulness'], processed_df['有效性'])
-                ax.set_xlabel('原始有效性评分')
-                ax.set_ylabel('模型有效性评分')
-                ax.set_title('有效性评分对比')
-                # 添加对角线
-                min_val = min(processed_df['usefulness'].min(), processed_df['有效性'].min())
-                max_val = max(processed_df['usefulness'].max(), processed_df['有效性'].max())
-                ax.plot([min_val, max_val], [min_val, max_val], 'r--')
-                st.pyplot(fig)
         
         # 下载结果
         output = io.BytesIO()
