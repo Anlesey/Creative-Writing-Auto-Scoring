@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 import numpy as np
-from Utils.Utils import request_for_model_score, get_finturned_model_response_openai
+from Utils.Utils import get_finturned_model_response_openai
 from Utils.components import get_model_options_selectbox
 from openai import OpenAI
 from scipy.stats import pearsonr, spearmanr
