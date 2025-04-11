@@ -43,7 +43,7 @@ def process_file(df, model_name, sys_prompt, samples_df):
             text=text, 
             model_name=model_name,
             sys_prompt=sys_prompt,
-            d_fewshot=samples_df
+            samples_df=samples_df
         )
         if err is None:
             df.at[i, '新颖性'] = scores[0]
