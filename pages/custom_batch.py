@@ -13,11 +13,11 @@ if "uploader_key" not in st.session_state:
 def update_key():
     st.session_state.uploader_key += 1
 
-# 修改函数名以匹配调用
+# 修改样本文件验证函数
 def validate_samples_file(df):
-    required_columns = ['text', 'originality', 'usefulness']
+    required_columns = ['role', 'content']
     if not all(column in df.columns for column in required_columns):
-        return "样本文件必须包含以下列：text, originality, usefulness"
+        return "样本文件必须包含以下列：role, content"
     return None
 
 def validate_test_file(df):
@@ -25,32 +25,75 @@ def validate_test_file(df):
         return "测试文件必须包含text列"
     return None
 
+# 新增函数：从新格式的样本文件构建消息
+def build_messages_from_samples(samples_df, sys_prompt):
+    messages = [{"role": "system", "content": sys_prompt}]
+    
+    if samples_df is not None:
+        for i, row in samples_df.iterrows():
+            messages.append({"role": row['role'], "content": row['content']})
+    
+    return messages
+
 def process_file(df, model_name, sys_prompt, samples_df):
     # 检查是否已有评分列
-    has_original_scores = 'originality' in df.columns and 'usefulness' in df.columns
+    has_original_scores = 'originality' in df.columns
     
-    df['新颖性'] = np.nan
-    df['有效性'] = np.nan
+    df['创造力评分'] = np.nan
+    df['评分理由'] = ""
     df['Error'] = np.nan
     progress_bar = st.progress(0)
 
     OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"]
     client = OpenAI(api_key=OPENAI_API_KEY)
 
+    # 构建基础消息
+    base_messages = build_messages_from_samples(samples_df, sys_prompt)
+
     for i, row in df.iterrows():
         text = f"{row['text']}"
-        scores, err = get_finturned_model_response_openai(
-            client=client, 
-            text=text, 
-            model_name=model_name,
-            sys_prompt=sys_prompt,
-            samples_df=samples_df
-        )
-        if err is None:
-            df.at[i, '新颖性'] = scores[0]
-            df.at[i, '有效性'] = scores[1]
-        else:
-            df.at[i, 'Error'] = err
+        
+        # 复制基础消息并添加当前用户查询
+        messages = base_messages.copy()
+        messages.append({"role": "user", "content": text})
+        
+        # 调用API
+        retries = 0
+        max_retries = 5
+        while retries < max_retries:
+            try:
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    temperature=0,
+                    max_tokens=200  # 增加token数以容纳评分理由
+                )
+                
+                reply_content = response.choices[0].message.content
+                
+                # 解析回复内容，提取评分和理由
+                if "【创造力评分】" in reply_content and "【评分理由】" in reply_content:
+                    score_text = reply_content.split("【创造力评分】：")[1].split("分")[0].strip()
+                    score = float(score_text)
+                    
+                    reason_parts = reply_content.split("【评分理由】：")
+                    if len(reason_parts) > 1:
+                        reason = reason_parts[1].strip()
+                    else:
+                        reason = "未提供评分理由"
+                    
+                    df.at[i, '创造力评分'] = score
+                    df.at[i, '评分理由'] = reason
+                    break
+                else:
+                    retries += 1
+                    time.sleep(0.05)
+            except Exception as e:
+                retries += 1
+                if retries >= max_retries:
+                    df.at[i, 'Error'] = str(e)
+                time.sleep(0.05)
+        
         progress_bar.progress((i + 1) / len(df))
     
     if df['Error'].isna().sum() == df.shape[0]:
@@ -59,22 +102,16 @@ def process_file(df, model_name, sys_prompt, samples_df):
     # 计算相关性
     correlation_results = {}
     if has_original_scores:
-        # 计算Pearson相关系数
-        pearson_originality, p_value_pearson_orig = pearsonr(df['originality'], df['新颖性'])
-        pearson_usefulness, p_value_pearson_use = pearsonr(df['usefulness'], df['有效性'])
-        
-        # 计算Spearman相关系数
-        spearman_originality, p_value_spearman_orig = spearmanr(df['originality'], df['新颖性'])
-        spearman_usefulness, p_value_spearman_use = spearmanr(df['usefulness'], df['有效性'])
+        # 只计算与originality的相关性
+        pearson_creativity, p_value_pearson = pearsonr(df['originality'], df['创造'])
+        spearman_creativity, p_value_spearman = spearmanr(df['originality'], df['创造'])
         
         correlation_results = {
             'pearson': {
-                'originality': (pearson_originality, p_value_pearson_orig),
-                'usefulness': (pearson_usefulness, p_value_pearson_use)
+                'creativity': (pearson_creativity, p_value_pearson)
             },
             'spearman': {
-                'originality': (spearman_originality, p_value_spearman_orig),
-                'usefulness': (spearman_usefulness, p_value_spearman_use)
+                'creativity': (spearman_creativity, p_value_spearman)
             }
         }
     
@@ -89,10 +126,34 @@ def main():
     # System Prompt输入
     sys_prompt = st.text_area(
         "System Prompt",
-        value='''请你作为创造力研究领域的专业研究者，为创意写作任务中被试的作答评分。
-任务背景：被试被要求为博物馆中的老年游览者发现一项急需解决的体验问题，并现有技术为老年游览者设计一个能够最好解决该问题的、最新颖的观展方案。例如，可以设计博物馆的藏品展示、游览方式，或使用互联网技术通过智能终端解决问题。
-要求：对于被试的回答，你需要评价的分数有两项：原创性、有效性。分值为0~10：1分代表该作答不具备原创性/有效性，10分代表该作答极具原创性/有效性。
-输出规范：直接给出原创性、有效性两个评分结果，以英文逗号分隔。评分需保留一位小数。请直接给出分数结果，不需要任何其他额外说明。''',
+        value='''System prompt
+你是一位创造力研究领域的专家，擅长分析文本中体现的创造性思维，并根据被试在开放性问题中的回答进行创造力评分。你具备深入分析问题解决策略的能力，能够结合评分维度对文本进行合理打分，并输出清晰、结构化的评分理由。
+
+User prompt
+研究背景：
+- 研究目的：本任务旨在评估学生在“智慧博物馆”主题情境下完成的创造力写作题中的文本创造力水平。该题目要求学生结合智慧博物馆的背景与相关技术（如信息技术、人工智能、3D打印、数字交互、互联网等），为“老年人在博物馆中参观存在困难”的现实问题提供原创性的解决方案或设计构想。
+- 测验题目：
+你和小组成员们到当地博物馆实地考察时发现：喜爱传统文化的博物馆游览者中有一类老年人群体，他们极其热爱历史和传统文化，但是，随着年龄的增大，他们在游览时遇到越来越多的问题。比如，这类游览者的体力已经不足以支撑他们在博物馆中随意走动，游览藏品，而且他们的视力也逐渐减弱，对于一些摆放位置较远的展品已经无法看清。请你针对这类游览者遇到的问题，发挥创造力和想象力，设计一个你认为能够最好解决该问题的、最新颖的观展方案。
+- 数据：
+被试生成的解决方案或设计文本。
+
+评分目标：
+请你阅读被试生成的文本对其创造力进行1-10分评分，1分表示几乎无创新；10分表示文本极具创新性，并说明评分依据。
+
+评分步骤：
+1、充分阅读文本
+2、分析文本中体现的思维策略
+3、给出评分与理由
+
+输出要求：
+1.	每条文本的创造力评分。
+2.	简要叙述评分原因。
+
+输入：被试的作答文本
+
+输出格式：
+【创造力评分】：X分  
+【评分理由】：（简要叙述打分依据） ''',
         height=200
     )
     
@@ -103,7 +164,7 @@ def main():
         # 上传Few-shot样本文件（可选）
         st.write("#### Few-shot样本文件(可选)")
         samples_file = st.file_uploader(
-            "上传包含text、originality、usefulness列的样本文件",
+            "上传包含role、content列的样本文件",
             type=["xlsx", "csv"],
             key=f'samples_uploader_{st.session_state.uploader_key}'
         )
@@ -144,20 +205,16 @@ def main():
             if has_original_scores:
                 st.write("### 相关性分析结果")
                 
-                # 创建相关性结果表格
+                # 创建相关性结果表格 - 只显示创造力评分与originality的相关性
                 correlation_table = pd.DataFrame({
-                    '维度': ['原创性 (Pearson)', '有效性 (Pearson)', '原创性 (Spearman)', '有效性 (Spearman)'],
+                    '维度': ['创造力 (Pearson)', '创造力 (Spearman)'],
                     '相关系数': [
-                        correlation_results['pearson']['originality'][0],
-                        correlation_results['pearson']['usefulness'][0],
-                        correlation_results['spearman']['originality'][0],
-                        correlation_results['spearman']['usefulness'][0]
+                        correlation_results['pearson']['creativity'][0],
+                        correlation_results['spearman']['creativity'][0]
                     ],
                     'p值': [
-                        correlation_results['pearson']['originality'][1],
-                        correlation_results['pearson']['usefulness'][1],
-                        correlation_results['spearman']['originality'][1],
-                        correlation_results['spearman']['usefulness'][1]
+                        correlation_results['pearson']['creativity'][1],
+                        correlation_results['spearman']['creativity'][1]
                     ]
                 })
                 
@@ -179,10 +236,24 @@ def main():
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 on_click=update_key
             )
-    # elif samples_file or test_file:
-    #     st.info("请上传两个文件后再开始评分")
 
     st.divider()
+    st.markdown(
+    '''
+    #### 说明
+    1. Few-shot样本文件格式要求：
+    - 文件格式：.xlsx或.csv
+    - 必须包含以下列：
+        - **role**：消息角色（system/user/assistant）
+        - **content**：消息内容
+
+    2. 测试文件格式要求：
+    - 文件格式：.xlsx或.csv
+    - 必须包含以下列：
+        - **text**：待评分的文本
+    - 如果包含以下列，将计算相关性：
+        - **originality**：原始创造力评分
+    ''')
 
 if __name__ == "__main__":
     main()
