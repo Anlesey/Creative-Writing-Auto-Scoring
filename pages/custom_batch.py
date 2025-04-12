@@ -135,8 +135,8 @@ def process_file(df, model_name, sys_prompt, samples_df):
     correlation_results = {}
     if has_original_scores:
         # 只计算与originality的相关性
-        pearson_creativity, p_value_pearson = pearsonr(df['originality'], df['创造'])
-        spearman_creativity, p_value_spearman = spearmanr(df['originality'], df['创造'])
+        pearson_creativity, p_value_pearson = pearsonr(df['originality'], df['创造力评分'])
+        spearman_creativity, p_value_spearman = spearmanr(df['originality'], df['创造力评分'])
         
         correlation_results = {
             'pearson': {
