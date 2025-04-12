@@ -8,10 +8,19 @@ from Utils.components import get_model_options_selectbox
 from openai import OpenAI
 from scipy.stats import f, pearsonr, spearmanr
 
+# 修正会话状态初始化
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
+
+# 确保cancel_scoring在使用前已初始化
+if "cancel_scoring" not in st.session_state:
+    st.session_state.cancel_scoring = False
+
 def update_key():
     st.session_state.uploader_key += 1
+
+def set_cancel_scoring():
+    st.session_state.cancel_scoring = True
 
 # 修改样本文件验证函数
 def validate_samples_file(df):
@@ -36,6 +45,9 @@ def build_messages_from_samples(samples_df, sys_prompt):
     return messages
 
 def process_file(df, model_name, sys_prompt, samples_df):
+    # 重置取消状态
+    st.session_state.cancel_scoring = False
+    
     # 检查是否已有评分列
     has_original_scores = 'originality' in df.columns
     
@@ -44,6 +56,11 @@ def process_file(df, model_name, sys_prompt, samples_df):
     df['Error'] = np.nan
     progress_bar = st.progress(0)
 
+    # 添加取消按钮
+    cancel_col = st.empty()
+    with cancel_col.container():
+        st.button("取消评分", on_click=set_cancel_scoring, key="cancel_button")
+
     OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"]
     client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -51,6 +68,12 @@ def process_file(df, model_name, sys_prompt, samples_df):
     base_messages = build_messages_from_samples(samples_df, sys_prompt)
 
     for i, row in df.iterrows():
+        # 检查是否取消
+        if st.session_state.cancel_scoring:
+            st.warning("评分已取消！")
+            cancel_col.empty()  # 移除取消按钮
+            return df, {}, has_original_scores
+            
         text = f"{row['text']}"
         
         # 复制基础消息并添加当前用户查询
@@ -61,6 +84,12 @@ def process_file(df, model_name, sys_prompt, samples_df):
         retries = 0
         max_retries = 5
         while retries < max_retries:
+            # 再次检查是否取消
+            if st.session_state.cancel_scoring:
+                st.warning("评分已取消！")
+                cancel_col.empty()  # 移除取消按钮
+                return df, {}, has_original_scores
+                
             try:
                 response = client.chat.completions.create(
                     model=model_name,
@@ -96,10 +125,13 @@ def process_file(df, model_name, sys_prompt, samples_df):
         
         progress_bar.progress((i + 1) / len(df))
     
+    # 移除取消按钮
+    cancel_col.empty()
+    
     if df['Error'].isna().sum() == df.shape[0]:
         del df['Error']
     
-    # 计算相关性
+    # 修复相关性计算中的列名错误
     correlation_results = {}
     if has_original_scores:
         # 只计算与originality的相关性
