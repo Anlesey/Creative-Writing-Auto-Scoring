@@ -1,7 +1,8 @@
 import time
 import numpy as np
+import os  # 添加这行导入
 from openai import OpenAI
-import os
+
 def get_api_key(model_name, st_secrets=None):
     """
     根据模型名称获取适当的API密钥
