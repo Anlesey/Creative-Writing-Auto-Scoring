@@ -1,7 +1,7 @@
 import time
 import numpy as np
 from openai import OpenAI
-
+import os
 def get_api_key(model_name, st_secrets=None):
     """
     根据模型名称获取适当的API密钥
@@ -14,24 +14,22 @@ def get_api_key(model_name, st_secrets=None):
     - api_key: 适用于该模型的API密钥
     """
     # 默认的API密钥 - 使用环境变量或其他安全方式存储
-    default_openai_key = os.environ.get("OPENAI_API_KEY", "")
-    default_ark_key = os.environ.get("ARK_API_KEY", "")
     
     if st_secrets is None:
-        return default_openai_key if "deepseek" not in model_name.lower() else default_ark_key
+        return None
     
     try:
         # 根据模型类型选择合适的API密钥
         if "deepseek" in model_name.lower():
             # 尝试获取ARK_API_KEY，如果不存在则使用默认值
-            return st_secrets.get("ARK_API_KEY", default_ark_key)
+            return st_secrets.get("ARK_API_KEY", None)
         else:
             # 尝试获取OPENAI_API_KEY，如果不存在则使用默认值
-            return st_secrets.get("OPENAI_API_KEY", default_openai_key)
+            return st_secrets.get("OPENAI_API_KEY", None)
     except Exception as e:
         # 如果获取过程中出现任何错误，返回默认密钥
         print(f"获取API密钥时出错: {str(e)}")
-        return default_openai_key if "deepseek" not in model_name.lower() else default_ark_key
+        return None
 
 
 def get_default_system_prompt():
