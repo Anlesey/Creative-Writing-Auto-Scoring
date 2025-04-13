@@ -1,6 +1,6 @@
 import time
 import numpy as np
-import os  # 添加这行导入
+import os
 from openai import OpenAI
 
 def get_api_key(model_name, st_secrets=None):
@@ -260,3 +260,32 @@ def process_dataframe_for_scoring(df, model_name, sys_prompt, samples_df, api_ke
             }
     
     return df, correlation_results, has_original_scores
+
+
+def get_client(model_name, api_key):
+    """
+    根据模型名称获取适当的客户端
+    
+    参数:
+    - model_name: 模型名称
+    - api_key: API密钥
+    
+    返回:
+    - client: OpenAI客户端
+    - actual_model: 实际使用的模型名称
+    """
+    # 检查是否是deepseek模型
+    if "deepseek" in model_name.lower():
+        # 使用deepseek的API配置
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://ark.cn-beijing.volces.com/api/v3",
+        )
+        # 使用deepseek的模型名称
+        actual_model = "deepseek-r1-250120"
+    else:
+        # 使用标准OpenAI配置
+        client = OpenAI(api_key=api_key)
+        actual_model = model_name
+    
+    return client, actual_model
