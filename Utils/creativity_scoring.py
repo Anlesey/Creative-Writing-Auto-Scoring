@@ -128,7 +128,7 @@ def score_creativity(client, text, model_name, messages, max_retries=5, check_ca
                 try:
                     scores['新颖性'] = float(novelty_parts)
                 except:
-                    pass
+                    scores['新颖性'] = None
             
             # 提取有效性评分
             if "有效性：" in reply_content:
@@ -136,7 +136,7 @@ def score_creativity(client, text, model_name, messages, max_retries=5, check_ca
                 try:
                     scores['有效性'] = float(usefulness_parts)
                 except:
-                    pass
+                    scores['有效性'] = None
             
             # 提取创造性评分
             if "创造性：" in reply_content:
@@ -144,7 +144,7 @@ def score_creativity(client, text, model_name, messages, max_retries=5, check_ca
                 try:
                     scores['创造性'] = float(creativity_parts)
                 except:
-                    pass
+                    scores['创造性'] = None
             
             # 检查是否成功提取了所有三个维度的评分
             if len(scores) == 3:
